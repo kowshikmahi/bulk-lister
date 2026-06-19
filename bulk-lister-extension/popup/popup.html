@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bulk Lister Pro</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222636;
+      --border: #2e3250;
+      --accent: #4f6ef7;
+      --accent-hover: #6b84ff;
+      --success: #22c55e;
+      --error: #ef4444;
+      --warn: #f59e0b;
+      --text: #e2e8f0;
+      --text-muted: #7b8ab8;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 520px;
+      min-height: 600px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 13px;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e2340 0%, #2a3060 100%);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .header .logo {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .header h1 { font-size: 16px; font-weight: 700; }
+    .header small { color: var(--text-muted); font-size: 11px; }
+    .header-actions { margin-left: auto; display: flex; gap: 6px; }
+    .icon-btn {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-muted); border-radius: 6px;
+      padding: 5px 8px; cursor: pointer; font-size: 12px;
+      transition: all 0.2s;
+    }
+    .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .tabs { display: flex; border-bottom: 1px solid var(--border); }
+    .tab {
+      padding: 10px 14px; cursor: pointer; color: var(--text-muted);
+      font-size: 12px; font-weight: 600; border-bottom: 2px solid transparent;
+      transition: all 0.2s; user-select: none;
+    }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab:hover { color: var(--text); }
+
+    .tab-content { display: none; padding: 14px; }
+    .tab-content.active { display: block; }
+
+    /* URL Input Section */
+    .section { margin-bottom: 14px; }
+    .section-label {
+      font-size: 11px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;
+    }
+    textarea {
+      width: 100%; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      color: var(--text); padding: 10px; font-size: 12px;
+      resize: vertical; outline: none; min-height: 110px;
+      font-family: 'Courier New', monospace; line-height: 1.5;
+      transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: var(--text-muted); }
+    .url-count { font-size: 11px; color: var(--text-muted); text-align: right; margin-top: 4px; }
+
+    /* Settings Grid */
+    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .setting-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px;
+    }
+    .setting-card.full { grid-column: 1 / -1; }
+    .setting-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .setting-name { font-size: 12px; font-weight: 600; }
+    .setting-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* Toggle */
+    .toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+    .toggle input { display: none; }
+    .toggle-track {
+      position: absolute; inset: 0; background: #374151;
+      border-radius: 10px; cursor: pointer; transition: background 0.2s;
+    }
+    .toggle input:checked ~ .toggle-track { background: var(--accent); }
+    .toggle-thumb {
+      position: absolute; top: 3px; left: 3px;
+      width: 14px; height: 14px; background: white;
+      border-radius: 50%; transition: transform 0.2s; pointer-events: none;
+    }
+    .toggle input:checked ~ .toggle-track .toggle-thumb { transform: translateX(16px); }
+    .toggle.disabled .toggle-track { opacity: 0.4; cursor: not-allowed; }
+
+    /* Inputs */
+    .input-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    input[type="number"], input[type="text"], select {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); border-radius: 6px; padding: 6px 10px;
+      font-size: 12px; outline: none; transition: border-color 0.2s;
+    }
+    input[type="number"]:focus, input[type="text"]:focus, select:focus {
+      border-color: var(--accent);
+    }
+    input[type="number"] { width: 70px; }
+    input[type="text"] { width: 100%; }
+    select { width: 100%; }
+    label { font-size: 11px; color: var(--text-muted); }
+
+    /* Domain selector */
+    .domain-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; padding: 5px 10px; font-size: 11px;
+      cursor: pointer; transition: all 0.2s; color: var(--text-muted);
+    }
+    .domain-badge.active { border-color: var(--accent); color: var(--accent); background: #1c2148; }
+    .domain-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+
+    /* Progress dashboard */
+    .dashboard {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 12px; margin-bottom: 12px;
+    }
+    .dash-title { font-size: 11px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+    .progress-bar-wrap {
+      background: var(--surface2); border-radius: 4px; height: 8px;
+      overflow: hidden; margin-bottom: 8px;
+    }
+    .progress-bar {
+      height: 100%; background: linear-gradient(90deg, var(--accent), #8b5cf6);
+      border-radius: 4px; transition: width 0.4s ease;
+      width: 0%;
+    }
+    .progress-label {
+      display: flex; justify-content: space-between;
+      font-size: 11px; color: var(--text-muted); margin-bottom: 10px;
+    }
+    .counters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .counter-box {
+      background: var(--surface2); border-radius: 6px; padding: 8px;
+      text-align: center;
+    }
+    .counter-box .num { font-size: 20px; font-weight: 800; }
+    .counter-box .lbl { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+    .counter-box.success .num { color: var(--success); }
+    .counter-box.failed .num { color: var(--error); }
+    .counter-box.skipped .num { color: var(--warn); }
+    .counter-box.total .num { color: var(--accent); }
+
+    /* Status log */
+    .status-log {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px;
+      max-height: 160px; overflow-y: auto; margin-bottom: 10px;
+    }
+    .log-entry {
+      display: flex; gap: 8px; padding: 4px 0;
+      border-bottom: 1px solid var(--border); font-size: 11px;
+      align-items: flex-start;
+    }
+    .log-entry:last-child { border: none; }
+    .log-dot {
+      width: 7px; height: 7px; border-radius: 50%; margin-top: 3px; flex-shrink: 0;
+    }
+    .log-dot.success { background: var(--success); }
+    .log-dot.failed { background: var(--error); }
+    .log-dot.skipped { background: var(--warn); }
+    .log-dot.info { background: var(--accent); }
+    .log-url { color: var(--text-muted); font-family: monospace; font-size: 10px; }
+    .log-reason { color: var(--text); }
+
+    /* Buttons */
+    .btn-row { display: flex; gap: 8px; }
+    .btn {
+      padding: 9px 16px; border-radius: var(--radius); border: none;
+      cursor: pointer; font-size: 13px; font-weight: 600;
+      transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-primary {
+      background: var(--accent); color: white; flex: 1;
+      justify-content: center;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-danger { background: var(--error); color: white; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-secondary {
+      background: var(--surface); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent); }
+
+    /* Status badge */
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; padding: 3px 8px; border-radius: 20px;
+      font-weight: 600;
+    }
+    .status-badge.running { background: #1c3a1c; color: var(--success); }
+    .status-badge.stopped { background: #2a1a1a; color: var(--error); }
+    .status-badge.idle { background: var(--surface2); color: var(--text-muted); }
+    .pulse { animation: pulse 1.2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* Blacklist section */
+    .blacklist-area {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px; margin-bottom: 10px;
+    }
+    .blacklist-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px;
+    }
+    .tag-list { display: flex; flex-wrap: wrap; gap: 5px; min-height: 30px; }
+    .tag {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 4px; padding: 3px 8px; font-size: 11px;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .tag .rm { cursor: pointer; color: var(--error); font-size: 13px; line-height: 1; }
+    .tag .rm:hover { color: #ff6b6b; }
+    .add-keyword-row { display: flex; gap: 6px; margin-top: 8px; }
+    .add-keyword-row input { flex: 1; }
+
+    /* API Config */
+    .api-field { margin-bottom: 10px; }
+    .api-field label { display: block; margin-bottom: 4px; font-size: 11px; color: var(--text-muted); }
+    .api-key-input { position: relative; }
+    .api-key-input input { width: 100%; padding-right: 36px; }
+    .show-key-btn {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px;
+    }
+    .captcha-provider-row { display: flex; gap: 8px; }
+    .captcha-provider-btn {
+      flex: 1; padding: 7px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text-muted); cursor: pointer;
+      font-size: 11px; font-weight: 600; text-align: center; transition: all 0.2s;
+    }
+    .captcha-provider-btn.active { border-color: var(--accent); color: var(--accent); background: #1c2148; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .ai-model-badge {
+      font-size: 10px; background: #1e1040; color: #a78bfa;
+      border: 1px solid #5b21b6; border-radius: 4px; padding: 2px 6px;
+    }
+    .warn-badge {
+      background: #2a1a00; border: 1px solid #78350f; border-radius: 6px;
+      padding: 6px 10px; font-size: 11px; color: var(--warn); margin-bottom: 10px;
+    }
+    .empty-log { color: var(--text-muted); font-size: 11px; text-align: center; padding: 20px; }
+    .separator { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
+    .flex-center { display: flex; align-items: center; gap: 8px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">🛒</div>
+    <div>
+      <h1>Bulk Lister Pro</h1>
+      <small>Amazon → eBay Automated Listing</small>
+    </div>
+    <div class="header-actions">
+      <span id="statusBadge" class="status-badge idle">● Idle</span>
+      <button class="icon-btn" id="optionsBtn" title="Settings">⚙</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="lister">🚀 Lister</div>
+    <div class="tab" data-tab="settings">⚙ Settings</div>
+    <div class="tab" data-tab="blacklist">🚫 Blacklist</div>
+    <div class="tab" data-tab="report">📊 Report</div>
+    <div class="tab" data-tab="api">🔑 API Keys</div>
+  </div>
+
+  <!-- LISTER TAB -->
+  <div class="tab-content active" id="tab-lister">
+    <div class="section">
+      <div class="section-label">Amazon URLs (one per line)</div>
+      <textarea id="urlInput" placeholder="https://www.amazon.com/dp/B08N5WRWNW&#10;https://www.amazon.co.uk/dp/B09ABC123&#10;https://www.amazon.de/dp/B07XYZ456&#10;...paste your URLs here"></textarea>
+      <div class="url-count" id="urlCount">0 URLs</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Target eBay Domain</div>
+      <div class="domain-badges" id="domainBadges">
+        <div class="domain-badge active" data-domain="ebay.com">🇺🇸 .com</div>
+        <div class="domain-badge" data-domain="ebay.co.uk">🇬🇧 .co.uk</div>
+        <div class="domain-badge" data-domain="ebay.de">🇩🇪 .de</div>
+        <div class="domain-badge" data-domain="ebay.com.au">🇦🇺 .au</div>
+        <div class="domain-badge" data-domain="ebay.it">🇮🇹 .it</div>
+        <div class="domain-badge" data-domain="ebay.fr">🇫🇷 .fr</div>
+      </div>
+    </div>
+
+    <div class="dashboard">
+      <div class="dash-title">Session Progress</div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="progress-label">
+        <span id="progressText">Not started</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="counters">
+        <div class="counter-box total">
+          <div class="num" id="cntTotal">0</div>
+          <div class="lbl">Total</div>
+        </div>
+        <div class="counter-box success">
+          <div class="num" id="cntSuccess">0</div>
+          <div class="lbl">Listed ✓</div>
+        </div>
+        <div class="counter-box failed">
+          <div class="num" id="cntFailed">0</div>
+          <div class="lbl">Failed ✗</div>
+        </div>
+        <div class="counter-box skipped">
+          <div class="num" id="cntSkipped">0</div>
+          <div class="lbl">Skipped</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="startBtn">▶ Start Bulk Listing</button>
+      <button class="btn btn-danger" id="stopBtn" style="display:none">⏹ Stop</button>
+      <button class="btn btn-secondary" id="pauseBtn" style="display:none">⏸</button>
+    </div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div class="tab-content" id="tab-settings">
+    <div class="settings-grid">
+
+      <div class="setting-card full">
+        <div class="setting-row">
+          <div>
+            <div class="setting-name">Concurrent Tabs</div>
+            <div class="setting-desc">Number of simultaneous listing tabs (1–10)</div>
+          </div>
+        </div>
+        <div class="input-row">
+          <input type="number" id="tabCount" min="1" max="10" value="3" />
+          <label>tabs open at once</label>
+          <input type="range" id="tabSlider" min="1" max="10" value="3" style="flex:1;accent-color:var(--accent)" />
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <div class="setting-row">
+          <div class="setting-name">FBA Only</div>
+          <label class="toggle">
+            <input type="checkbox" id="fbaOnly" checked />
+            <div class="toggle-track"><div class="toggle-thumb"></div></div>
+          </label>
+        </div>
+        <div class="setting-desc">Only process "Fulfilled by Amazon" items</div>
+      </div>
+
+      <div class="setting-card">
+        <div class="setting-row">
+          <div class="setting-name">AI Optimization</div>
+          <label class="toggle">
+            <input type="checkbox" id="aiOptimize" checked />
+            <div class="toggle-track"><div class="toggle-thumb"></div></div>
+          </label>
+        </div>
+        <div class="setting-desc">Use OpenAI to rewrite titles & descriptions</div>
+      </div>
+
+      <div class="setting-card full">
+        <div class="setting-row">
+          <div class="setting-name">Auto-Close on Error</div>
+          <label class="toggle">
+            <input type="checkbox" id="autoClose" checked />
+            <div class="toggle-track"><div class="toggle-thumb"></div></div>
+          </label>
+        </div>
+        <div class="setting-desc">Auto-close stuck tabs after timeout</div>
+        <div class="input-row" style="margin-top:8px">
+          <label>Timeout (seconds):</label>
+          <input type="number" id="closeTimeout" min="10" max="300" value="60" />
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <div class="setting-row">
+          <div class="setting-name">Performance Mode</div>
+          <label class="toggle">
+            <input type="checkbox" id="perfMode" />
+            <div class="toggle-track"><div class="toggle-thumb"></div></div>
+          </label>
+        </div>
+        <div class="setting-desc">Reduces resource use on slow computers</div>
+      </div>
+
+      <div class="setting-card">
+        <div class="setting-row">
+          <div class="setting-name">Chinese Sellers (EU)</div>
+          <label class="toggle disabled">
+            <input type="checkbox" id="chineseSellers" disabled />
+            <div class="toggle-track"><div class="toggle-thumb"></div></div>
+          </label>
+        </div>
+        <div class="setting-desc" style="color:var(--warn)">🔒 EU/Germany only – coming soon</div>
+      </div>
+
+      <div class="setting-card full">
+        <div class="setting-row">
+          <div class="setting-name">AI Model</div>
+          <span class="ai-model-badge">OpenAI</span>
+        </div>
+        <div class="setting-desc" style="margin-bottom:8px">Model used for content optimization</div>
+        <select id="aiModel">
+          <option value="gpt-4o-mini">GPT-4o Mini (Fast & Cheap)</option>
+          <option value="gpt-4o">GPT-4o (Best Quality)</option>
+          <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Legacy)</option>
+        </select>
+      </div>
+
+      <div class="setting-card full">
+        <div class="setting-row">
+          <div class="setting-name">Random Delay Between Actions</div>
+        </div>
+        <div class="setting-desc" style="margin-bottom:8px">Human-like delays to avoid bot detection</div>
+        <div class="input-row">
+          <label>Min (ms):</label>
+          <input type="number" id="delayMin" value="800" min="200" max="10000" style="width:80px" />
+          <label>Max (ms):</label>
+          <input type="number" id="delayMax" value="2500" min="500" max="20000" style="width:80px" />
+        </div>
+      </div>
+
+    </div>
+
+    <hr class="separator" />
+    <button class="btn btn-primary" id="saveSettingsBtn" style="width:100%">💾 Save Settings</button>
+  </div>
+
+  <!-- BLACKLIST TAB -->
+  <div class="tab-content" id="tab-blacklist">
+    <div class="warn-badge">
+      ⚠ VeRO Brand Blacklist and Policy Keywords are enforced by Admin and are always active regardless of your personal list.
+    </div>
+
+    <div class="blacklist-area">
+      <div class="blacklist-header">
+        <div class="setting-name">🔒 VeRO Brands (Admin – Hidden)</div>
+        <span style="font-size:10px;color:var(--text-muted)">Admin-managed</span>
+      </div>
+      <div style="color:var(--text-muted);font-size:11px;padding:6px 0">
+        This list is managed by Admin only and is not visible to users. Brands are silently checked during scraping.
+      </div>
+    </div>
+
+    <div class="blacklist-area">
+      <div class="blacklist-header">
+        <div class="setting-name">🔒 Policy Keywords (Admin – Hidden)</div>
+        <span style="font-size:10px;color:var(--text-muted)">Domain-specific</span>
+      </div>
+      <div style="color:var(--text-muted);font-size:11px;padding:6px 0">
+        Restricted keywords managed by Admin (e.g., police-related terms, OTC medications). Always applied, hidden from users.
+      </div>
+    </div>
+
+    <div class="blacklist-area">
+      <div class="blacklist-header">
+        <div class="setting-name">✏ My Personal Keyword Blacklist</div>
+        <span style="font-size:10px;color:var(--text-muted)">Your account only</span>
+      </div>
+      <div class="setting-desc" style="margin-bottom:8px">
+        Add your own blocked keywords. VeRO/Policy/eBay Safe-Text filters still apply regardless.
+      </div>
+      <div class="tag-list" id="userBlacklistTags"></div>
+      <div class="add-keyword-row">
+        <input type="text" id="newKeyword" placeholder="e.g. baby climbers" />
+        <button class="btn btn-secondary" id="addKeywordBtn" style="padding:6px 12px">+ Add</button>
+      </div>
+    </div>
+
+    <div class="blacklist-area">
+      <div class="blacklist-header">
+        <div class="setting-name">🔒 eBay Safe-Text Filter (Admin – Hidden)</div>
+        <span style="font-size:10px;color:var(--text-muted)">Auto-strip</span>
+      </div>
+      <div style="color:var(--text-muted);font-size:11px;padding:6px 0">
+        Automatically strips off-platform phrases (e.g., "visit our website", external URLs). eBay-specific phrases like "Message us via eBay messages" are permitted and preserved.
+      </div>
+    </div>
+  </div>
+
+  <!-- REPORT TAB -->
+  <div class="tab-content" id="tab-report">
+    <div class="flex-center" style="margin-bottom:10px;justify-content:space-between">
+      <div class="section-label" style="margin:0">Session Status Report</div>
+      <div class="flex-center" style="gap:6px">
+        <button class="btn btn-secondary" id="exportCsvBtn" style="padding:5px 10px;font-size:11px">⬇ Export CSV</button>
+        <button class="btn btn-secondary" id="clearLogBtn" style="padding:5px 10px;font-size:11px">🗑 Clear</button>
+      </div>
+    </div>
+    <div class="status-log" id="statusLog">
+      <div class="empty-log">No activity yet. Start the Bulk Lister to see results here.</div>
+    </div>
+  </div>
+
+  <!-- API KEYS TAB -->
+  <div class="tab-content" id="tab-api">
+    <div class="api-field">
+      <label>OpenAI API Key (for title/description optimization)</label>
+      <div class="api-key-input">
+        <input type="password" id="openaiKey" placeholder="sk-..." />
+        <button class="show-key-btn" data-target="openaiKey">👁</button>
+      </div>
+    </div>
+
+    <div class="api-field">
+      <label>Captcha Solving Provider</label>
+      <div class="captcha-provider-row" style="margin-bottom:8px">
+        <div class="captcha-provider-btn active" data-provider="2captcha">2Captcha</div>
+        <div class="captcha-provider-btn" data-provider="anticaptcha">Anti-Captcha</div>
+        <div class="captcha-provider-btn" data-provider="capsolver">CapSolver</div>
+      </div>
+      <div class="api-key-input">
+        <input type="password" id="captchaKey" placeholder="Captcha API key..." />
+        <button class="show-key-btn" data-target="captchaKey">👁</button>
+      </div>
+    </div>
+
+    <div class="api-field">
+      <label>eBay Account Cookie / Session (auto-captured on login)</label>
+      <div class="api-key-input">
+        <input type="password" id="ebayCookie" placeholder="Paste session cookie or login to eBay first..." />
+        <button class="show-key-btn" data-target="ebayCookie">👁</button>
+      </div>
+    </div>
+
+    <hr class="separator" />
+    <button class="btn btn-primary" id="saveApiBtn" style="width:100%">💾 Save API Keys</button>
+    <div style="font-size:10px;color:var(--text-muted);margin-top:8px;text-align:center">
+      🔒 All keys stored locally in Chrome's encrypted storage. Never transmitted except to their respective services.
+    </div>
+  </div>
+
+  <script src="popup/popup.js"></script>
+</body>
+</html>
