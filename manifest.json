@@ -1,0 +1,50 @@
+{
+  "manifest_version": 3,
+  "name": "Bulk Lister Pro – Amazon to eBay",
+  "version": "1.0.1",
+  "description": "Automated Bulk Lister for Amazon-to-eBay dropshipping with AI optimization, VeRO protection, and smart filtering.",
+  "permissions": [
+    "tabs",
+    "storage",
+    "scripting",
+    "notifications",
+    "activeTab",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://*.amazon.com/*",
+    "https://*.amazon.co.uk/*",
+    "https://*.amazon.de/*",
+    "https://*.amazon.com.au/*",
+    "https://*.amazon.it/*",
+    "https://*.amazon.fr/*",
+    "https://*.ebay.com/*",
+    "https://*.ebay.co.uk/*",
+    "https://*.ebay.de/*",
+    "https://*.ebay.com.au/*",
+    "https://*.ebay.it/*",
+    "https://*.ebay.fr/*",
+    "https://api.openai.com/*",
+    "https://2captcha.com/*",
+    "https://api.anti-captcha.com/*",
+    "https://api.capsolver.com/*"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["pages/*", "icons/*", "popup/*", "background/*", "content/*"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "options_page": "pages/options.html"
+}
